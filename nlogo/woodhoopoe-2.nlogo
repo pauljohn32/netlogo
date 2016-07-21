@@ -2,6 +2,7 @@ globals
 [
   survivalP
   burnin
+  scoutDistance
 ]
 
 
@@ -10,6 +11,7 @@ turtles-own
   age
   sex
   alpha?
+  IwillScout?
 ]
 
 patches-own
@@ -25,12 +27,13 @@ to setup
   reset-ticks
 
   set survivalP 0.99 ; 99% survival rate
-
+  set scoutDistance 5
   create-turtles 100
   [
     set age  1 + random 24
-    set shape "default"
-    set size 0.5
+
+    set shape "square"
+    set size 0.35
     set alpha? false
 
     ifelse (random-float 1 < 0.5)
@@ -40,17 +43,28 @@ to setup
       [
         set heading 270
       ]
+
     ;; put male on one row, female on other.  simplifies calculations
     setxy (who mod 25) (who mod 2)
     ifelse (who mod 2 = 0)
       [
         set sex "female"
         set color red
+        set ycor 0
       ]
       [
         set sex "male"
         set color blue
+        set ycor 1
       ]
+    if age < 12
+      [
+        set ycor -0.35
+        set shape "circle"
+        set size 0.2
+        if sex = "male" [set ycor  ycor + 1]
+      ]
+
   ]
 end
 
@@ -99,17 +113,57 @@ to reproduce ; turtle method for females
         set age 0
         set alpha? false
         set color red + 2
+        set size 0.2
+        set shape "circle"
+        ; am at center when born?
+        set xcor pxcor + random-float 0.3
+        set ycor -0.4
         ; oops, it is a boy
         if random-float 1 < 0.5
         [
           set sex "male"
           set color blue + 2
-          set ycor 1
+          set ycor ycor + 1
         ]
       ]
     ]
    ]
 end
+
+to scout
+  if IwillScout? = false [stop]
+
+  if random-float 1.0 < .2
+  [
+    die
+    stop
+  ]
+
+  let original-x xcor
+  let original-y ycor
+
+  let stepsize 1
+  if random-float 1 < 0.5 [set stepsize -1]
+  let step stepsize
+
+  repeat scoutdistance
+  [
+    let newpatch patch-at stepsize 0
+    let new-x original-x + stepsize
+    let itHasAlpha hasAnAlpha newpatch
+    if itHasAlpha = false
+    [
+      setxy new-x original-y
+      ask newpatch [fillAlpha]
+      stop
+    ]
+
+    set step step + stepsize
+  ]
+
+end
+
+
 
 to-report turtleage
   report age
@@ -131,14 +185,32 @@ to updatePlots
 end
 
 
-
+to ageTurtle
+  set age age + 1
+  if age > 11
+  [
+    ifelse alpha?
+    [
+      set size  0.4
+      set shape "default"
+      set ycor .35
+      if (sex = "male")[set ycor ycor + 1]
+    ]
+    [
+      set size 0.25
+      set shape "square"
+      set ycor 0
+      if (sex = "male")[set ycor ycor + 1]
+    ]
+  ]
+end
 
 to go
   tick
   show ticks
   ask turtles
   [
-    set age age + 1 ; get older
+    ageTurtle
   ]
 
   ask patches [
@@ -158,6 +230,11 @@ to go
       set hasAlpha? false
       set alpha nobody
       die]
+  ]
+
+  ask turtles
+  [
+    scout
   ]
 
   updatePlots
