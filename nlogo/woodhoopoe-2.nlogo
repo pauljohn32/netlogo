@@ -90,22 +90,24 @@ to reproduce ; turtle method for females
   if (sex = "female") and (alpha?) and (ticks mod 12 = 0)
   [
     let manpatch patch-at 0 1
-    ;if (manpatch [hasalpha?])
-    ;[
-     hatch 2
+    let iHaveAMale hasAnAlpha manpatch
+    show iHaveAMale
+    if iHaveAMale
     [
-      set age 0
-      set alpha? false
-      set color red + 2
-      ; oops, it is a boy
-      if random-float 1 < 0.5
+      hatch 2
       [
-        set sex "male"
-        set color blue + 2
-        set ycor 1
+        set age 0
+        set alpha? false
+        set color red + 2
+        ; oops, it is a boy
+        if random-float 1 < 0.5
+        [
+          set sex "male"
+          set color blue + 2
+          set ycor 1
+        ]
       ]
-     ]
-   ; ]
+    ]
    ]
 end
 
@@ -132,7 +134,8 @@ end
 
 
 to go
-
+  tick
+  show ticks
   ask turtles
   [
     set age age + 1 ; get older
@@ -160,12 +163,9 @@ to go
   updatePlots
 
 
-  tick
   set burnin burnin + 1
   if burnin = 24 [
     reset-ticks
-
-
     ] ; throw away burnin
   if ticks = 240 [ stop ]
 
@@ -176,11 +176,11 @@ end
 GRAPHICS-WINDOW
 210
 10
-820
-89
+1045
+107
 -1
 -1
-24.0
+33.0
 1
 10
 1
