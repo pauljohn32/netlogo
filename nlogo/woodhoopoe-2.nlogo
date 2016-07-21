@@ -131,6 +131,12 @@ to reproduce ; turtle method for females
 end
 
 to scout
+  if alpha? or age <= 12
+  [
+    set IwillScout? false
+    stop
+  ]
+
   if IwillScout? = false [stop]
 
   if random-float 1.0 < .2
@@ -217,6 +223,15 @@ to go
      fillAlpha
   ]
 
+  ask turtles
+  [
+    ifelse random-float 1 < 0.5
+    [set IwillScout? true]
+    [set IwillScout? false]
+    scout
+  ]
+
+
    ;; how to select turtles in row 0?
   ask turtles [
     reproduce
@@ -232,10 +247,6 @@ to go
       die]
   ]
 
-  ask turtles
-  [
-    scout
-  ]
 
   updatePlots
 
