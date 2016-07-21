@@ -1,6 +1,8 @@
 globals
 [
   survivalP
+  scoutP
+  scoutPDie
   burnin
   scoutDistance
 ]
@@ -12,6 +14,8 @@ turtles-own
   sex
   alpha?
   IwillScout?
+  xstart
+  ystart
 ]
 
 patches-own
@@ -22,12 +26,15 @@ patches-own
 
 
 to setup
-
+  random-seed 234234
   ca
   reset-ticks
 
-  set survivalP 0.99 ; 99% survival rate
+  set survivalP 1 ; 0.99 ; 99% survival rate
   set scoutDistance 5
+  set scoutP 1.0 ;  tendency to scout
+  set scoutPDie 0.0 ; 0.20 prob die while scouting
+
   create-turtles 100
   [
     set age  1 + random 24
@@ -46,6 +53,8 @@ to setup
 
     ;; put male on one row, female on other.  simplifies calculations
     setxy (who mod 25) (who mod 2)
+    set xstart pxcor
+    set ystart pycor
     ifelse (who mod 2 = 0)
       [
         set sex "female"
@@ -62,10 +71,23 @@ to setup
         set ycor -0.35
         set shape "circle"
         set size 0.2
+        set color color + 2 ; younger brighter
         if sex = "male" [set ycor  ycor + 1]
       ]
-
   ]
+  ask patches [
+    set hasAlpha? false
+    fillAlpha
+    ]
+end
+
+to becomeAlpha ; turtle method
+  set alpha? true
+  set shape "default"
+  ifelse sex = "female"
+  [set ycor  0.35]
+  [set ycor  0.35 + 1]
+  set size 0.4
 end
 
 
@@ -73,6 +95,8 @@ end
 to fillAlpha ; patch method determines leadership
   ifelse count turtles-here > 0
     [
+      if hasAlpha? [stop]; TODO check if alpha is correct agent
+
       let oldest max-one-of turtles-here [turtleage]
 
       ifelse [age] of oldest > 12
@@ -83,7 +107,7 @@ to fillAlpha ; patch method determines leadership
          set pcolor yellow
          ask oldest
          [
-           set alpha? true
+           becomeAlpha
          ]
        ]
        [
@@ -118,6 +142,8 @@ to reproduce ; turtle method for females
         ; am at center when born?
         set xcor pxcor + random-float 0.3
         set ycor -0.4
+        set xstart pxcor
+        set ystart pycor
         ; oops, it is a boy
         if random-float 1 < 0.5
         [
@@ -139,7 +165,7 @@ to scout
 
   if IwillScout? = false [stop]
 
-  if random-float 1.0 < .2
+  if random-float 1.0 < scoutPDie
   [
     die
     stop
@@ -159,6 +185,7 @@ to scout
     let itHasAlpha hasAnAlpha newpatch
     if itHasAlpha = false
     [
+      pd
       setxy new-x original-y
       ask newpatch [fillAlpha]
       stop
@@ -193,14 +220,20 @@ end
 
 to ageTurtle
   set age age + 1
-  if age > 11
+  if age = 12
+  [
+    ask patch-here [fillAlpha]
+  ]
+  if age > 12
   [
     ifelse alpha?
     [
-      set size  0.4
-      set shape "default"
-      set ycor .35
-      if (sex = "male")[set ycor ycor + 1]
+      becomeAlpha
+      ;; TODO make sure not other alphas
+      ;;set size  0.4
+      ;;set shape "default"
+      ;;set ycor .35
+      ;;if (sex = "male")[set ycor ycor + 1]
     ]
     [
       set size 0.25
@@ -225,7 +258,7 @@ to go
 
   ask turtles
   [
-    ifelse random-float 1 < 0.5
+    ifelse random-float 1 < scoutP
     [set IwillScout? true]
     [set IwillScout? false]
     scout
@@ -242,23 +275,22 @@ to go
     if random-float 1 > survivalP
     [
       ; must die, but clean up patch of self first
-      set hasAlpha? false
+      if alpha?
+      [
+        set hasAlpha? false
+      ]
       set alpha nobody
-      die]
+      die
+    ]
   ]
 
-
   updatePlots
-
 
   set burnin burnin + 1
   if burnin = 24 [
     reset-ticks
     ] ; throw away burnin
   if ticks = 240 [ stop ]
-
-
-
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
