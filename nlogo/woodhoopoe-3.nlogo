@@ -5,6 +5,7 @@ globals
   scoutPDie
   burnin
   scoutDistance
+  groupSizeList
 ]
 
 
@@ -13,6 +14,7 @@ turtles-own
   age
   sex
   alpha?
+  subordinate?
   IwillScout?
   xstart
   ystart
@@ -29,11 +31,19 @@ to setup
   random-seed 234234
   ca
   reset-ticks
-
-  set survivalP 1 ; 0.99 ; 99% survival rate
+  set groupSizeList[]
+  set survivalP 0.99 ; 99% survival rate
   set scoutDistance 5
-  set scoutP 1.0 ;  tendency to scout
-  set scoutPDie 0.0 ; 0.20 prob die while scouting
+  set scoutP 0.5 ;  tendency to scout
+  set scoutPDie 0.20 ; prob die while scouting
+
+
+  repeat 25
+  [
+    set groupSizeList lput 0 groupSizeList
+  ]
+
+
 
   create-turtles 100
   [
@@ -79,6 +89,12 @@ to setup
     set hasAlpha? false
     fillAlpha
     ]
+
+  file-close-all
+  if file-exists? "WH-out.txt"
+  [file-delete "WH-out.txt"]
+  file-open "WH-out.txt"
+
 end
 
 to becomeAlpha ; turtle method
@@ -88,6 +104,15 @@ to becomeAlpha ; turtle method
   [set ycor  0.35]
   [set ycor  0.35 + 1]
   set size 0.4
+end
+
+to becomeSubordinate; turtle method
+  set subordinate? true
+  set shape "square"
+  ifelse sex = "female"
+  [set ycor  0.0]
+  [set ycor  0.0 + 1]
+  set size 0.30
 end
 
 
@@ -178,10 +203,12 @@ to scout
   if random-float 1 < 0.5 [set stepsize -1]
   let step stepsize
 
+  ; TODO check if heading updates automatically
+
   repeat scoutdistance
   [
-    let newpatch patch-at stepsize 0
-    let new-x original-x + stepsize
+    let newpatch patch-at step 0
+    let new-x original-x + step
     let itHasAlpha hasAnAlpha newpatch
     if itHasAlpha = false
     [
@@ -212,9 +239,44 @@ to-report pop
   report count turtles
 end
 
+
+to-report popAdults
+  report count turtles with [age > 12]
+end
+
+
 to updatePlots
   set-current-plot "population"
   plot pop
+
+
+
+   show groupSizeList
+
+
+
+  if (ticks mod 12 = 0)
+  [
+    let j 0
+    repeat 25
+    [
+      let zzz sum [count turtles-here with [age > 12]] of patches with [pxcor = j]
+      set groupSizeList replace-item j groupSizeList zzz
+      set j j + 1
+    ]
+
+    set-current-plot "histogram"
+;    ask patches
+;    [
+;      set groupSizeList lput (count turtles-here with [age > 12]) groupSizeList
+;    ]
+    histogram groupSizeList
+  ]
+end
+
+
+to-report nPerCell [aPatch] ; patch report
+  report count [turtles] of aPatch
 end
 
 
@@ -388,6 +450,24 @@ false
 "" ""
 PENS
 "default" 1.0 0 -16777216 true "" ""
+
+PLOT
+272
+171
+472
+321
+histogram
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 1 -16777216 true "" ""
 
 @#$#@#$#@
 ## WHAT IS IT?
