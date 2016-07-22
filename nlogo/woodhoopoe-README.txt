@@ -13,8 +13,11 @@ See Graphic
   subordinates: squares in middle
   alpha: arrows at top
   
+NetLogo coordinate surprise: Vertical coordinates of
+row 0 are [-0.5, 0.5]. This was important in positioning
+babies and alphas.
 
-If not just for beayty, why?
+If not just for beauty, why?
 - conceivably faster, simpler to program
 
 
