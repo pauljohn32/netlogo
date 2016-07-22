@@ -38,12 +38,12 @@ to setup
   set scoutPDie 0.20 ; prob die while scouting
 
 
-  repeat 25
-  [
-    set groupSizeList lput 0 groupSizeList
-  ]
-
-
+;  repeat 25
+;  [
+;    set groupSizeList lput 0 groupSizeList
+;  ]
+;
+;
 
   create-turtles 100
   [
@@ -106,16 +106,17 @@ to becomeAlpha ; turtle method
   set size 0.4
 end
 
+
+
+
 to becomeSubordinate; turtle method
   set subordinate? true
   set shape "square"
   ifelse sex = "female"
   [set ycor  0.0]
   [set ycor  0.0 + 1]
-  set size 0.30
+  set size 0.25
 end
-
-
 
 to fillAlpha ; patch method determines leadership
   ifelse count turtles-here > 0
@@ -129,7 +130,7 @@ to fillAlpha ; patch method determines leadership
          ; patch sets its variable
          set hasalpha? true
          set alpha oldest
-         set pcolor yellow
+         set pcolor 48
          ask oldest
          [
            becomeAlpha
@@ -181,6 +182,8 @@ to reproduce ; turtle method for females
    ]
 end
 
+
+
 to scout
   if alpha? or age <= 12
   [
@@ -215,6 +218,7 @@ to scout
       pd
       setxy new-x original-y
       ask newpatch [fillAlpha]
+      pu
       stop
     ]
 
@@ -249,27 +253,32 @@ to updatePlots
   set-current-plot "population"
   plot pop
 
-
-
-   show groupSizeList
-
-
-
   if (ticks mod 12 = 0)
   [
+    let oneTimeList[]
+    repeat 25
+    [
+      set oneTimeList lput 0 oneTimeList
+    ]
+
     let j 0
     repeat 25
     [
       let zzz sum [count turtles-here with [age > 12]] of patches with [pxcor = j]
-      set groupSizeList replace-item j groupSizeList zzz
+      set oneTimeList replace-item j oneTimeList zzz
       set j j + 1
     ]
 
+    ; set groupSizeList lput oneTimeList groupSizeList
+    set groupSizeList (sentence oneTimeList groupSizeList)
+
     set-current-plot "histogram"
-;    ask patches
+;;    ask patches
 ;    [
 ;      set groupSizeList lput (count turtles-here with [age > 12]) groupSizeList
 ;    ]
+    show "here's something"
+    show groupSizeList
     histogram groupSizeList
   ]
 end
@@ -282,7 +291,7 @@ end
 
 to ageTurtle
   set age age + 1
-  if age = 12
+  if age > 12
   [
     ask patch-here [fillAlpha]
   ]
@@ -292,16 +301,9 @@ to ageTurtle
     [
       becomeAlpha
       ;; TODO make sure not other alphas
-      ;;set size  0.4
-      ;;set shape "default"
-      ;;set ycor .35
-      ;;if (sex = "male")[set ycor ycor + 1]
     ]
     [
-      set size 0.25
-      set shape "square"
-      set ycor 0
-      if (sex = "male")[set ycor ycor + 1]
+      becomeSubordinate
     ]
   ]
 end
@@ -323,6 +325,7 @@ to go
     ifelse random-float 1 < scoutP
     [set IwillScout? true]
     [set IwillScout? false]
+  ;;set IwillScout angieMagic1
     scout
   ]
 
