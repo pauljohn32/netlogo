@@ -20,6 +20,7 @@ turtles-own
   ystart
 ]
 
+
 patches-own
 [
   hasalpha?
@@ -28,7 +29,7 @@ patches-own
 
 
 to setup
-  random-seed 234234
+  ;random-seed 234234
   ca
   reset-ticks
   set groupSizeList[]
@@ -37,18 +38,9 @@ to setup
   set scoutP 0.5 ;  tendency to scout
   set scoutPDie 0.20 ; prob die while scouting
 
-
-;  repeat 25
-;  [
-;    set groupSizeList lput 0 groupSizeList
-;  ]
-;
-;
-
   create-turtles 100
   [
     set age  1 + random 24
-
     set shape "square"
     set size 0.35
     set alpha? false
@@ -63,8 +55,9 @@ to setup
 
     ;; put male on one row, female on other.  simplifies calculations
     setxy (who mod 25) (who mod 2)
-    set xstart pxcor
-    set ystart pycor
+    set xstart pxcor ; just for record keeping
+    set ystart pycor ; just for record keeping
+    ; females in row 0, males in row 1
     ifelse (who mod 2 = 0)
       [
         set sex "female"
@@ -76,19 +69,23 @@ to setup
         set color blue
         set ycor 1
       ]
-    if age < 12
+    ; treat all like subordinate, relabel others
+    set subordinate? true
+    if age <= 12
       [
         set ycor -0.35
         set shape "circle"
         set size 0.2
         set color color + 2 ; younger brighter
         if sex = "male" [set ycor  ycor + 1]
+        set subordinate? false
       ]
   ]
+
   ask patches [
     set hasAlpha? false
     fillAlpha
-    ]
+  ]
 
   file-close-all
   if file-exists? "WH-out.txt"
@@ -97,28 +94,54 @@ to setup
 
 end
 
+; concentrate code that sets agent characteristics here
 to becomeAlpha ; turtle method
   set alpha? true
+  set subordinate? false
   set shape "default"
   ifelse sex = "female"
-  [set ycor  0.35]
-  [set ycor  0.35 + 1]
+  [
+    set ycor  0.35
+    set color red
+  ]
+  [
+    set ycor  0.35 + 1
+    set color blue
+  ]
   set size 0.4
+  ; tell the patch so as well, but will also do elsewhere to be sure
+  set hasAlpha? true
+  set alpha self
 end
 
-
-
-
+; put subordinates on center row with squares and lighter colors for younger
 to becomeSubordinate; turtle method
   set subordinate? true
+  set alpha? false
   set shape "square"
   ifelse sex = "female"
-  [set ycor  0.0]
-  [set ycor  0.0 + 1]
+  [
+    set ycor  0.0
+    set xcor pxcor - 0.2 + random-float .4
+    ; younger ones lighter until 17
+    if age > 16
+    [
+      set color red
+    ]
+  ]
+  [
+    set ycor  0.0 + 1
+    if age > 16
+      [
+        set color blue
+      ]
+  ]
   set size 0.25
 end
 
-to fillAlpha ; patch method determines leadership
+; ask patches to conduct check for alphas and promote somebody
+; patch method determines leadership
+to fillAlpha
   ifelse count turtles-here > 0
     [
       if hasAlpha? [stop]; TODO check if alpha is correct agent
@@ -138,24 +161,25 @@ to fillAlpha ; patch method determines leadership
        ]
        [
          set hasalpha? false
-         set pcolor black
        ]
     ]
   ; else it is a vacant cell
     [
       set hasalpha? false
-      set pcolor black
+      set pcolor 93
     ]
 end
 
+
+; turtle method for females
 ; a female who is an alpha in month divisible by 12 reproduces
 ; if there is an alpha male; HOW TO ASK if patch
-to reproduce ; turtle method for females
+to reproduce
   if (sex = "female") and (alpha?) and (ticks mod 12 = 0)
   [
+    ; look up, find a male
     let manpatch patch-at 0 1
     let iHaveAMale hasAnAlpha manpatch
-    show iHaveAMale
     if iHaveAMale
     [
       hatch 2
@@ -185,6 +209,7 @@ end
 
 
 to scout
+
   if alpha? or age <= 12
   [
     set IwillScout? false
@@ -205,6 +230,15 @@ to scout
   let stepsize 1
   if random-float 1 < 0.5 [set stepsize -1]
   let step stepsize
+
+  ; if stepsize + 1, heading is right
+  ifelse stepsize > 0
+  [
+    set heading 90
+  ]
+  [
+    set heading 270
+  ]
 
   ; TODO check if heading updates automatically
 
@@ -227,7 +261,32 @@ to scout
 
 end
 
+; turtle method, find age hierarchy
+to ageHierarchy
+  if count turtles-here > 0
+  [
+    ;;show turtles-here
+    ;;let competition  (other turtles-here) with [subordinate? or alpha?]
+    let competition  (other turtles-here) with [subordinate?]
+    sayHi
+    show (word "My competition!" "There are " count competition " of these things")
+    ask competition [sayHi]
+    let ageList sort [age] of competition
+    let repeatList []
+    repeat count competition
+    [
+      set repeatList lput age repeatList
+    ]
+    show (map - repeatList ageList)
+    ;show ageList2
+  ]
+end
 
+; ask agent report about self to output
+to sayHi
+  show (word "hi my name is " who " my age is " age)
+  show (word "agent " who " X:" xcor " Y:" ycor)
+end
 
 to-report turtleage
   report age
@@ -268,17 +327,12 @@ to updatePlots
       set oneTimeList replace-item j oneTimeList zzz
       set j j + 1
     ]
-
+    ; sentence like unlist in R, it collects up values
+    ; following created a list of lists, not a list of elements
     ; set groupSizeList lput oneTimeList groupSizeList
     set groupSizeList (sentence oneTimeList groupSizeList)
 
     set-current-plot "histogram"
-;;    ask patches
-;    [
-;      set groupSizeList lput (count turtles-here with [age > 12]) groupSizeList
-;    ]
-    show "here's something"
-    show groupSizeList
     histogram groupSizeList
   ]
 end
@@ -308,9 +362,16 @@ to ageTurtle
   ]
 end
 
+
+
 to go
   tick
-  show ticks
+
+  ask turtles with [subordinate?]
+  [
+    ageHierarchy
+  ]
+
   ask turtles
   [
     ageTurtle
@@ -463,7 +524,7 @@ histogram
 NIL
 NIL
 0.0
-10.0
+6.0
 0.0
 10.0
 true
@@ -475,15 +536,28 @@ PENS
 @#$#@#$#@
 ## WHAT IS IT?
 
-(a general understanding of what the model is trying to show or explain)
+Chapter 19 (Railsback & Grimm) exercise about Woodhoopoe birds
 
 ## HOW IT WORKS
 
-(what rules the agents use to create the overall behavior of the model)
+Agents are birds that age.  Gender is important. Birds over age 12 months are
+eligible to become alpha birds within their gender/patch.  Oldest bird is alpha, if ages are equal, then alpha is designated randomly (and permanently).
+
+As described in Ch 19, there is one row of birds. This version has 2 rows, one for males, one for females.  This simplifies some book-keeping,  but makes summary data collection more interesting/troublesome.
+
+Visualization of the state of each patch and agent movement is a point of
+emphasis here.
+
+This visualization has small dots for infant birds, and squares for subordinates, who
+1. may become alpha if there is no current alpha
+2. may move sideways to another patch if there is no alpha
+
+Risk of death is randomly imposed on all birds, and subordinates who go on scouting
+foray endure a much higher risk of death.
 
 ## HOW TO USE IT
 
-(how to use the model, including a description of each of the items in the Interface tab)
+The interface does not introduce sliders, all parameters are set in the code at the moment.
 
 ## THINGS TO NOTICE
 
@@ -491,7 +565,7 @@ PENS
 
 ## THINGS TO TRY
 
-(suggested things for the user to try to do (move sliders, switches, etc.) with the model)
+Setup, then step one at a time to see open patches and fill by birth or movement.
 
 ## EXTENDING THE MODEL
 
@@ -499,7 +573,14 @@ PENS
 
 ## NETLOGO FEATURES
 
-(interesting or unusual features of NetLogo that the model uses, particularly in the Code tab; or where workarounds were needed for missing features)
+Because the 2 rows separate males and females, it is somewhat tedious to produce
+a total population count for the histogram.
+
+sayHi method is a Swarm-style thing
+
+A traditionalist might object to the use of minus signs in variable names, which
+NetLogo allows, but most other languages do not.  In this code, the minus names
+are avoided, using instead camel case.
 
 ## RELATED MODELS
 
