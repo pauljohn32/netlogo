@@ -6,6 +6,9 @@ globals
   burnin
   scoutDistance
   groupSizeList
+  forayAgeList
+  forayMeanList
+  subordinateAgeList
 ]
 
 
@@ -33,6 +36,9 @@ to setup
   ca
   reset-ticks
   set groupSizeList[]
+  set forayAgeList[]
+  set forayMeanList[]
+  set subordinateAgeList[]
   set survivalP 0.99 ; 99% survival rate
   set scoutDistance 5
   set scoutP 0.5 ;  tendency to scout
@@ -218,6 +224,8 @@ to scout
 
   if IwillScout? = false [stop]
 
+   set forayAgeList lput age forayAgeList
+;  show (word "My foray list " forayAgeList)
   if random-float 1.0 < scoutPDie
   [
     die
@@ -261,6 +269,21 @@ to scout
 
 end
 
+to randomScout
+  if age < 13 or alpha?
+  [
+    set IwillScout? false
+    stop
+  ]
+  ifelse random-float 1 < 0.95
+    [
+      set IwillScout? true
+    ]
+    [
+      set IwillScout? false
+    ]
+end
+
 ; turtle method, find age hierarchy
 to ageBasedScout
   if age < 13 or alpha?
@@ -277,9 +300,9 @@ to ageBasedScout
     ;;show turtles-here
     ;;let competition  (other turtles-here) with [subordinate? or alpha?]
     let competition  (other turtles-here) with [subordinate?]
-    sayHi
-    show (word "My competition!" "There are " count competition " of these things")
-    ask competition [sayHi]
+   ;; sayHi
+   ;; show (word "My competition!" "There are " count competition " of these things")
+   ;; ask competition [sayHi]
     if count competition = 0
     [
       ifelse random-float 1 < 0.5
@@ -294,14 +317,14 @@ to ageBasedScout
 
     ; if more than 1 competition, sort ages, if older, don't go
     let ageList sort [age] of competition
-    show ageList
+    ;;show ageList
     let repeatList []
     repeat count competition
     [
       set repeatList lput age repeatList
     ]
     let ageGaps (map - repeatList ageList)
-    show ageGaps
+    ;; show ageGaps
 
    if length ageGaps > 0
    [
@@ -376,6 +399,16 @@ to updatePlots
     set-current-plot "histogram"
     histogram groupSizeList
   ]
+
+   set-current-plot "foray ages"
+   ;  set-current-plot-pen "Mean Subordinate Age"
+   set-current-plot-pen "Subordinates"
+   ;plot last subordinateAgeList
+   plot mean subordinateAgeList
+   set-current-plot-pen "Forays"
+   ; ; set-current-plot-pen "Mean Foray Age"
+   plot last forayMeanList
+
 end
 
 
@@ -422,15 +455,26 @@ to go
      fillAlpha
   ]
 
-
+  ifelse any? turtles with [subordinate?]
+  [
+    set  subordinateAgeList lput mean [age] of turtles with [subordinate?] subordinateAgeList
+  ]
+  [
+    ; set  subordinateAgeList lput last subordinateAgeList subordinateAgeList
+     set  subordinateAgeList lput 0 subordinateAgeList
+  ]
+  show (word "subordinate list" subordinateAgeList)
+  ;set forayMeanList lput map mean forayAgeList forayMeanList
+  ;
+  let forayMean 0
+  if (length forayAgeList > 0) [set forayMean mean forayAgeList]
+  set forayMeanList lput forayMean forayMeanList
+  show (word "foray mean " forayMeanList)
 
   ask turtles
   [
-    ageBasedScout
-    ;;    ifelse random-float 1 < scoutP
-    ;;    [set IwillScout? true]
-    ;;    [set IwillScout? false]
-    ;;set IwillScout angieMagic1
+    ;ageBasedScout
+    randomScout
     scout
   ]
 
@@ -464,13 +508,13 @@ to go
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-210
+135
 10
 1045
-107
+113
 -1
 -1
-33.0
+36.0
 1
 10
 1
@@ -544,8 +588,8 @@ NIL
 PLOT
 28
 163
-228
-313
+259
+327
 population
 Ticks (months)
 Population
@@ -560,10 +604,10 @@ PENS
 "default" 1.0 0 -16777216 true "" ""
 
 PLOT
-272
-171
-472
-321
+256
+162
+486
+324
 histogram
 NIL
 NIL
@@ -576,6 +620,25 @@ false
 "" ""
 PENS
 "default" 1.0 1 -16777216 true "" ""
+
+PLOT
+485
+159
+874
+328
+foray ages
+Ticks
+Ages
+0.0
+10.0
+0.0
+10.0
+true
+true
+"" ""
+PENS
+"Subordinates" 1.0 0 -7500403 true "" ""
+"Forays" 1.0 0 -2674135 true "" ""
 
 @#$#@#$#@
 ## WHAT IS IT?
