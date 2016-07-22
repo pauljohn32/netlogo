@@ -91,8 +91,8 @@ to setup
   if file-exists? "WH-out.txt"
   [file-delete "WH-out.txt"]
   file-open "WH-out.txt"
-
 end
+
 
 ; concentrate code that sets agent characteristics here
 to becomeAlpha ; turtle method
@@ -262,7 +262,16 @@ to scout
 end
 
 ; turtle method, find age hierarchy
-to ageHierarchy
+to ageBasedScout
+  if age < 13 or alpha?
+  [
+    set IwillScout? false
+    stop
+  ]
+
+;  set IwillScout? true
+;  stop
+
   if count turtles-here > 0
   [
     ;;show turtles-here
@@ -271,14 +280,46 @@ to ageHierarchy
     sayHi
     show (word "My competition!" "There are " count competition " of these things")
     ask competition [sayHi]
+    if count competition = 0
+    [
+      ifelse random-float 1 < 0.5
+      [
+        set IwillScout? true
+      ]
+      [
+        set IwillScout? false
+        stop
+      ]
+    ]
+
+    ; if more than 1 competition, sort ages, if older, don't go
     let ageList sort [age] of competition
+    show ageList
     let repeatList []
     repeat count competition
     [
       set repeatList lput age repeatList
     ]
-    show (map - repeatList ageList)
-    ;show ageList2
+    let ageGaps (map - repeatList ageList)
+    show ageGaps
+
+   if length ageGaps > 0
+   [
+     ifelse last ageGaps < 0
+     [
+       ; older one is in the way
+       set IwillScout? true
+     ]
+     [
+       ifelse random-float 1 < 0.5
+       [
+         set IwillScout? false
+       ]
+       [
+         set IwillScout? true
+       ]
+     ]
+   ]
   ]
 end
 
@@ -345,6 +386,11 @@ end
 
 to ageTurtle
   set age age + 1
+;  ; caution: old birds die
+;  if age > 60
+;  [
+;    if random-float 1 < 0.1 [die]
+;  ]
   if age > 12
   [
     ask patch-here [fillAlpha]
@@ -367,11 +413,6 @@ end
 to go
   tick
 
-  ask turtles with [subordinate?]
-  [
-    ageHierarchy
-  ]
-
   ask turtles
   [
     ageTurtle
@@ -381,12 +422,15 @@ to go
      fillAlpha
   ]
 
+
+
   ask turtles
   [
-    ifelse random-float 1 < scoutP
-    [set IwillScout? true]
-    [set IwillScout? false]
-  ;;set IwillScout angieMagic1
+    ageBasedScout
+    ;;    ifelse random-float 1 < scoutP
+    ;;    [set IwillScout? true]
+    ;;    [set IwillScout? false]
+    ;;set IwillScout angieMagic1
     scout
   ]
 
