@@ -416,6 +416,16 @@ to-report nPerCell [aPatch] ; patch report
   report count [turtles] of aPatch
 end
 
+to-report subordAgeReport
+  report mean subordinateAgeList
+end
+
+to-report forayAgeReport
+  report last forayMeanList
+end
+
+
+
 
 to ageTurtle
   set age age + 1
@@ -463,18 +473,17 @@ to go
     ; set  subordinateAgeList lput last subordinateAgeList subordinateAgeList
      set  subordinateAgeList lput 0 subordinateAgeList
   ]
-  show (word "subordinate list" subordinateAgeList)
-  ;set forayMeanList lput map mean forayAgeList forayMeanList
-  ;
-  let forayMean 0
+  ;;show (word "subordinate list" subordinateAgeList)
+
+   let forayMean 0
   if (length forayAgeList > 0) [set forayMean mean forayAgeList]
   set forayMeanList lput forayMean forayMeanList
-  show (word "foray mean " forayMeanList)
+ ;; show (word "foray mean " forayMeanList)
 
   ask turtles
   [
-    ;ageBasedScout
-    randomScout
+    ifelse ageBasedScouting [ ageBasedScout ]
+    [randomScout]
     scout
   ]
 
@@ -500,11 +509,13 @@ to go
 
   updatePlots
 
-  set burnin burnin + 1
-  if burnin = 24 [
-    reset-ticks
-    ] ; throw away burnin
-  if ticks = 240 [ stop ]
+;  set burnin burnin + 1
+;  if burnin = 24 [
+;    reset-ticks
+;    ] ; throw away burnin
+   if ticks = 264 [
+      stop
+   ]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -639,6 +650,17 @@ true
 PENS
 "Subordinates" 1.0 0 -7500403 true "" ""
 "Forays" 1.0 0 -2674135 true "" ""
+
+SWITCH
+113
+126
+306
+159
+ageBasedScouting
+ageBasedScouting
+0
+1
+-1000
 
 @#$#@#$#@
 ## WHAT IS IT?
