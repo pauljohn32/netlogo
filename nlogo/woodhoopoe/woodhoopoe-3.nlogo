@@ -658,7 +658,7 @@ SWITCH
 159
 ageBasedScouting
 ageBasedScouting
-0
+1
 1
 -1000
 
@@ -1029,6 +1029,20 @@ NetLogo 5.3.1
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
+<experiments>
+  <experiment name="experiment" repetitions="100" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="300"/>
+    <metric>count turtles</metric>
+    <metric>mean subordinateAgeList</metric>
+    <metric>last forayMeanList</metric>
+    <enumeratedValueSet variable="ageBasedScouting">
+      <value value="true"/>
+      <value value="false"/>
+    </enumeratedValueSet>
+  </experiment>
+</experiments>
 @#$#@#$#@
 @#$#@#$#@
 default
